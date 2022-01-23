@@ -120,6 +120,7 @@ def network_connecting(load_url):
 def sub(desire_price,url):
 	# サイト情報取得
 	try:
+		lowpricetime = datetime.datetime.now().isoformat(timespec="seconds")
 		lowprice = float(network_connecting(url))
 	except TypeError:
 		print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
@@ -130,6 +131,7 @@ def sub(desire_price,url):
 		time.sleep(5)
 		# 再度サーバーから最安値を引っ張る
 		try:
+			lowpricetime = datetime.datetime.now().isoformat(timespec="seconds")
 			lowprice = float(network_connecting(url))
 		except TypeError:
 			print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
@@ -157,6 +159,7 @@ def main():
 		desire_price = float(desire_price)
 		# サイト情報取得
 		try:
+			lowpricetime = datetime.datetime.now().isoformat(timespec="seconds")
 			lowprice = float(network_connecting(load_url))
 		except TypeError:
 			print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
@@ -167,6 +170,7 @@ def main():
 			time.sleep(7)
 			# 再度サーバーから最安値を引っ張る
 			try:
+				lowpricetime = datetime.datetime.now().isoformat(timespec="seconds")
 				lowprice = float(network_connecting(load_url))
 			except TypeError:
 				print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
