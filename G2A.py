@@ -107,8 +107,10 @@ def network_connecting(load_url):
 				# 現在の最低価格を表示
 				print(str(datetime.datetime.now().isoformat(timespec="seconds")) + " 現在の最安値(lowPrice) : " + jsondata["offers"]["lowPrice"])
 				break
-		lowpricetime = datetime.datetime.now().isoformat(timespec="seconds")
-		return jsondata["offers"]["lowPrice"]
+		try:
+			return jsondata["offers"]["lowPrice"]
+		except UnboundLocalError:
+			network_connecting(load_url)
 	else:
 		html.raise_for_status()
 		print(html.txt)
