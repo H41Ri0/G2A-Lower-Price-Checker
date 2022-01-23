@@ -47,8 +47,6 @@ def price_check(price):
 	if bool(re.compile("^\d+\.?\d*\Z").match(price)):
 		return True
 	else:
-		# 数値ではありません。数値を入力してください。
-		print("It is not a number. Please enter a numerical value.")
 		return False
 	
 
@@ -63,18 +61,17 @@ def network_connecting(load_url):
 	try:
 		html = requests.get(load_url, headers=header, timeout=(30.0, 15.0))
 	except Timeout:
-		print("Connect Time out")
-		pass
+		print("Connect Time out. Retry")
+		network_connecting(load_url)
 	# HTTPステータスコード処理
 	if html.status_code == requests.codes.ok:
 		# Windows環境だとtextが内部でエンコードがcp932になっているらしいのでUTF-8に
 		soup = BeautifulSoup(html.text.encode('cp932', "ignore").decode('utf-8', "ignore"),  'html.parser')
-		#soup = BeautifulSoup(html.content,  'lxml')
 
 		# Script要素を表示する
 		for element in soup.find_all("script"):
 			findtext = str(element.text)
-			# lowPieceはユニークなのでscript内にlowPirce文字列があったら
+			# lowPriceはユニークなのでscript内にlowPrice文字列があったら
 			if "lowprice" in findtext or "lowPrice" in findtext:
 				# jsonデータ型に変換
 				jsondata=json.loads(findtext)
@@ -108,13 +105,40 @@ def network_connecting(load_url):
 				print(str(datetime.datetime.now().isoformat(timespec="seconds")) + " 現在の最安値(lowPrice) : " + jsondata["offers"]["lowPrice"])
 				break
 		try:
-			return jsondata["offers"]["lowPrice"]
+			if price_check(jsondata["offers"]["lowPrice"]):
+				return jsondata["offers"]["lowPrice"]
+			else:
+				network_connecting(load_url)
 		except UnboundLocalError:
 			network_connecting(load_url)
 	else:
 		html.raise_for_status()
 		print(html.txt)
+		network_connecting(load_url)
 
+# Exceptionが発生しても一生回し続ける
+def sub(desire_price,url):
+	# サイト情報取得
+	try:
+		lowprice = float(network_connecting(url))
+	except TypeError:
+		print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
+		sub(desire_price,url)
+	# 希望価格と商品最低価格の比較
+	while desire_price <= lowprice:
+		# サーバーに負荷をかけないためにスリープ
+		time.sleep(5)
+		# 再度サーバーから最安値を引っ張る
+		try:
+			lowprice = float(network_connecting(url))
+		except TypeError:
+			print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
+			sub(desire_price,url)
+	while True:
+		time.sleep(2)
+		print(str(datetime.datetime.now().isoformat(timespec="seconds")) + " " + str(lowpricetime) + " に対象商品が希望価格以下になりました。(Target products are now below the suggested price.)")
+
+# Exceptionが発生した場合subに任せる
 def main():
 	# URL入力
 	load_url = url_input()
@@ -127,17 +151,26 @@ def main():
 			if price_check(desire_price):
 				break
 			else:
+				# 数値ではありません。数値を入力してください。
+				print("It is not a number. Please enter a numerical value.")
 				desire_price = input_price()
 		desire_price = float(desire_price)
 		# サイト情報取得
-		lowprice = float(network_connecting(load_url))
+		try:
+			lowprice = float(network_connecting(load_url))
+		except TypeError:
+			print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
+			sub(desire_price,load_url)
 		# 希望価格と商品最低価格の比較
 		while desire_price <= lowprice:
 			# サーバーに負荷をかけないためにスリープ
 			time.sleep(7)
 			# 再度サーバーから最安値を引っ張る
-			lowprice = float(network_connecting(load_url))
-
+			try:
+				lowprice = float(network_connecting(load_url))
+			except TypeError:
+				print("TypeError: float() argument must be a string or a real number, not 'NoneType', Retry")
+				sub(desire_price,load_url)
 		while True:
 			time.sleep(2)
 			print(str(datetime.datetime.now().isoformat(timespec="seconds")) + " " + str(lowpricetime) + " に対象商品が希望価格以下になりました。(Target products are now below the suggested price.)")
